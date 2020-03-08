@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace SimpleChatbot.Models
+﻿namespace SimpleChatbot.Models
 {
     public class ChatConfig
     {
