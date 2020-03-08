@@ -1,0 +1,111 @@
+﻿@model SimpleChatbot.Models.ChatConfig
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>
+        Simple ChatBot
+    </title>
+    <script src="https://cdn.botframework.com/botframework-webchat/latest/webchat.js"></script>
+    <style>
+        html,
+        body {
+            height: 100%;
+        }
+        body {
+            margin: 0;
+        }
+        #webchat {
+            height: 100%;
+            width: 100%;
+        }
+        #buttonBar {
+            display: flex;
+            flex-wrap: wrap;
+            left: 10px;
+            margin: 0;
+            position: absolute;
+            top: 10px;
+        }
+            #buttonBar > a {
+                background-color: White;
+                border: solid 2px #0063b1;
+                color: #0063b1;
+                font-family: Calibri, 'Helvetica Neue', Arial, sans-serif;
+                font-size: 80%;
+                margin: 0 10px 10px 0;
+                padding: 5px 8px;
+                text-decoration: none;
+            }
+
+                #buttonBar > a.selected {
+                    background-color: #0063b1;
+                    color: White;
+                }
+    </style>
+</head>
+
+<body>
+    <div id="webchat" role="main"></div>
+    <script>
+        (async function () {
+            const styleOptions = {
+                hideUploadButton: true
+            };
+            const store = window.WebChat.createStore({}, ({ dispatch }) => next => action => {
+                if (action.type === 'DIRECT_LINE/CONNECT_FULFILLED') {
+                    dispatch({
+                        type: 'WEB_CHAT/SEND_EVENT',
+                        payload: {
+                            name: 'webchat/join',
+                            value: { language: window.navigator.language }
+                        }
+                    });
+                } else if (action.type === 'DIRECT_LINE/INCOMING_ACTIVITY') {
+                    const event = new Event('webchatincomingactivity');
+                    event.data = action.payload.activity;
+                    window.dispatchEvent(event);
+                }
+                return next(action);
+            })
+            window.WebChat.renderWebChat(
+                {
+                    directLine: window.WebChat.createDirectLine({
+                        token: '@Model.Token'
+                    }),
+                     userID: '@Model.UserId',
+               username: 'User',
+                    cardActionMiddleware: () => next => async ({ cardAction, getSignInUrl }) => {
+                        const { type, value } = cardAction;
+                        switch (type) {
+                            case 'signin':
+                                const popup = window.open();
+                                const url = await getSignInUrl();
+                                popup.location.href = url;
+                                break;
+                            case 'openUrl':
+                                if (confirm(`Do you want to open this URL?\n\n${value}`)) {
+                                    window.open(value, '_blank');
+                                }
+                                break;
+                            default:
+                                return next({ cardAction, getSignInUrl });
+                        }
+                    },
+                    store,
+                    styleOptions
+                },
+                document.getElementById('webchat'),
+            );
+            window.addEventListener('webchatincomingactivity', ({ data }) => {
+                console.log(`Received an activity of type "${data.type}":`);
+                console.log(data);
+            });
+            document.querySelector('#webchat > *').focus();
+        })().catch(err => console.error(err));
+    </script>
+</body>
+</html>
